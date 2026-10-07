@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { createMockSpecimens, DEFAULT_TEMPLATE } from '../data/mockSpecimens'
 import type { ImportResult, LabelTemplate, Specimen, ValidationIssue } from '../types/label'
 import { validateSpecimens } from '../utils/csv'
+import { usePrintStore } from './printStore'
 
 const STORAGE_KEY = 'pair-wise-yy-15-label-studio'
 
@@ -59,6 +60,9 @@ export const useLabelStore = defineStore('label-studio', () => {
       updatedAt: new Date().toISOString(),
     }
     persist()
+    // 模板或栏数一改动：引用它的未开打批次立即失效并按新容量重算页数，
+    // 已开打 / 已打完的批次冻结原快照，不受影响。
+    usePrintStore().rebuildQueuedBatches(templates.value[index].id, templates.value[index])
   }
 
   function saveAsTemplate(name: string) {
@@ -98,6 +102,8 @@ export const useLabelStore = defineStore('label-studio', () => {
     templates.value = templates.value.filter((item) => item.id !== id)
     if (activeTemplateId.value === id) activeTemplateId.value = templates.value[0].id
     persist()
+    // 排队批次不能悬挂在已删除模板上：迁移到保留下来的在用模板并重算
+    usePrintStore().rebaseQueuedBatches(id, templates.value[0])
   }
 
   function importResult(result: ImportResult) {

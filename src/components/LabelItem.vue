@@ -7,6 +7,7 @@ import BarcodeMark from './BarcodeMark.vue'
 const props = defineProps<{
   specimen: Specimen
   template: LabelTemplate
+  seqLabel?: string
 }>()
 
 const scale = computed(() => scientificFontScale(props.specimen.scientificName, props.template))
@@ -48,6 +49,7 @@ const style = computed(() => ({
     <div class="label-item__mark" v-if="template.barcodeMode !== 'none'">
       <BarcodeMark :value="specimen.accessionNo" :mode="template.barcodeMode" />
     </div>
+    <span v-if="seqLabel" class="label-item__seq">{{ seqLabel }}</span>
   </article>
 </template>
 
@@ -78,4 +80,16 @@ const style = computed(() => ({
 .label-item__line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .label-item__mark { display: grid; min-width: 0; place-items: center; }
 .label-item__mark :deep(.barcode-mark) { display: block; width: 100%; height: 15mm; object-fit: contain; }
+.label-item__seq {
+  position: absolute;
+  left: .9mm;
+  bottom: .3mm;
+  padding: 0 1mm;
+  border-radius: 1mm;
+  background: rgba(34, 34, 34, .82);
+  color: #fff;
+  font-family: Menlo, monospace;
+  font-size: 2.6mm;
+  line-height: 3.6mm;
+}
 </style>

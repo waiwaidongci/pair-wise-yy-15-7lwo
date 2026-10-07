@@ -75,12 +75,18 @@ export function exportTemplateConfig(template: LabelTemplate) {
 export async function exportPrintableHtml(
   specimens: Specimen[],
   template: LabelTemplate,
+  seqFormatter?: (seqNo: number) => string,
+  startSeq = 1,
 ) {
   const pages = paginateSpecimens(specimens, template)
   const labelWidth = labelInnerWidth(template)
   const rows = Array.from({ length: pages.length }, (_, pageIndex) =>
-    pages[pageIndex].map((specimen) => {
+    pages[pageIndex].map((specimen, withinPage) => {
       const scale = scientificFontScale(specimen.scientificName, template)
+      // 序号按全局位置 + 批次起始号计算，末页半空也不会错位
+      const before = pages.slice(0, pageIndex).reduce((sum, page) => sum + page.length, 0)
+      const seqNo = startSeq + before + withinPage
+      const seqLabel = seqFormatter?.(seqNo)
       const mark = ''
       return {
         pageIndex,
@@ -93,6 +99,7 @@ export async function exportPrintableHtml(
             ${template.includeNotes && specimen.notes ? `<div>${escapeHtml(specimen.notes)}</div>` : ''}
           </div>
           <div class="mark-slot" data-code="${escapeHtml(specimen.accessionNo)}">${mark}</div>
+          ${seqLabel ? `<span class="seq">${escapeHtml(seqLabel)}</span>` : ''}
         </article>`,
       }
     }),
@@ -145,6 +152,7 @@ html, body { margin: 0; padding: 0; background: #fff; color: #111; font-family: 
 .scientific { font-family: "Times New Roman", serif; white-space: normal; overflow-wrap: anywhere; line-height: 3.5mm; }
 .mark-slot { display: grid; place-items: center; min-width: 0; }
 .mark { display: block; width: 100%; height: 15mm; object-fit: contain; }
+.seq { position: absolute; left: .9mm; bottom: .3mm; padding: 0 1mm; border-radius: 1mm; background: rgba(34,34,34,.82); color: #fff; font-family: Menlo, monospace; font-size: 2.6mm; line-height: 3.6mm; }
 </style>
 </head>
 <body>${pageHtml}</body>

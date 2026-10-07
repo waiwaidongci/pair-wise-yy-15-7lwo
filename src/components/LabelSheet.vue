@@ -4,17 +4,37 @@ import type { LabelTemplate, Specimen } from '../types/label'
 import { labelInnerWidth, labelsPerPage, rowsPerPage } from '../utils/layout'
 import LabelItem from './LabelItem.vue'
 
+/** 批次渲染时的单张条目：快照标本 + 锁定序号 */
+interface SheetEntry {
+  specimen: Specimen
+  seqNo: number
+}
+
 const props = defineProps<{
-  specimens: Specimen[]
+  specimens?: Specimen[]
   template: LabelTemplate
   pageIndex?: number
+  /** 批次模式：直接给定本页条目，忽略 specimens / pageIndex 分页 */
+  entries?: SheetEntry[]
+  /** 是否把序号印在标签角上（排队批次开打后为 true） */
+  showSeq?: boolean
+  seqFormatter?: (seqNo: number) => string
 }>()
 
-const pageItems = computed(() => {
+const pageItems = computed<SheetEntry[]>(() => {
+  if (props.entries) return props.entries
   const perPage = labelsPerPage(props.template)
   const page = props.pageIndex || 0
-  return props.specimens.slice(page * perPage, page * perPage + perPage)
+  const list = props.specimens ?? []
+  return list
+    .slice(page * perPage, page * perPage + perPage)
+    .map((specimen) => ({ specimen, seqNo: 0 }))
 })
+
+const seqText = (seqNo: number) =>
+  props.showSeq && seqNo > 0
+    ? props.seqFormatter?.(seqNo) ?? `#${String(seqNo).padStart(4, '0')}`
+    : undefined
 
 const sheetStyle = computed(() => ({
   width: `${props.template.paperWidthMm}mm`,
@@ -33,10 +53,11 @@ const sheetStyle = computed(() => ({
 <template>
   <section class="label-sheet" :style="sheetStyle">
     <LabelItem
-      v-for="specimen in pageItems"
-      :key="specimen.id"
-      :specimen="specimen"
+      v-for="(entry, index) in pageItems"
+      :key="entry.specimen.id + '-' + index"
+      :specimen="entry.specimen"
       :template="template"
+      :seq-label="seqText(entry.seqNo)"
     />
     <div
       v-for="index in Math.max(0, labelsPerPage(template) - pageItems.length)"
