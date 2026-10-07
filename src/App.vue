@@ -8,6 +8,10 @@ import {
   FileExportIcon,
   PrintIcon,
 } from 'tdesign-icons-vue-next'
+import { useBatchStore } from './stores/batchStore'
+
+// 尽早激活批次仓库，使“模板变更 → 未开打批次失效”的监听在任何页面都生效。
+useBatchStore()
 
 const route = useRoute()
 const router = useRouter()

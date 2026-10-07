@@ -1,10 +1,9 @@
 import QRCode from 'qrcode'
 import JsBarcode from 'jsbarcode'
-import type { LabelTemplate, Specimen } from '../types/label'
+import type { BatchLabel, LabelTemplate, Specimen } from '../types/label'
 import {
   formatDate,
   labelInnerWidth,
-  paginateSpecimens,
   safeFilePart,
   scientificFontScale,
 } from './layout'
@@ -73,18 +72,14 @@ export function exportTemplateConfig(template: LabelTemplate) {
 }
 
 export async function exportPrintableHtml(
-  specimens: Specimen[],
+  labels: BatchLabel[],
   template: LabelTemplate,
 ) {
-  const pages = paginateSpecimens(specimens, template)
   const labelWidth = labelInnerWidth(template)
-  const rows = Array.from({ length: pages.length }, (_, pageIndex) =>
-    pages[pageIndex].map((specimen) => {
-      const scale = scientificFontScale(specimen.scientificName, template)
-      const mark = ''
-      return {
-        pageIndex,
-        html: `<article class="label">
+  const labelHtml = labels.map(({ specimen, serial }) => {
+    const scale = scientificFontScale(specimen.scientificName, template)
+    return `<article class="label">
+          ${typeof serial === 'number' ? `<span class="label__serial">№ ${serial}</span>` : ''}
           <div class="label__main">
             <div class="label__top"><strong>${escapeHtml(specimen.taxonName || '待鉴定类群')}</strong><span>${escapeHtml(specimen.accessionNo)}</span></div>
             <div class="scientific" style="font-size:${(template.fontSizePt * scale).toFixed(2)}pt;font-style:${template.italicScientific ? 'italic' : 'normal'}">${escapeHtml(specimen.scientificName || '学名待补')}</div>
@@ -92,16 +87,10 @@ export async function exportPrintableHtml(
             ${template.includeCollection ? `<div>${formatDate(specimen.collectedAt)} · ${escapeHtml(specimen.collector || '采集人待补')}${template.includeHabitat && specimen.habitat ? ` · ${escapeHtml(specimen.habitat)}` : ''}</div>` : ''}
             ${template.includeNotes && specimen.notes ? `<div>${escapeHtml(specimen.notes)}</div>` : ''}
           </div>
-          <div class="mark-slot" data-code="${escapeHtml(specimen.accessionNo)}">${mark}</div>
-        </article>`,
-      }
-    }),
-  )
-  const pageHtml = pages
-    .map(
-      (_, pageIndex) => `<section class="sheet">${rows[pageIndex].map((item) => item.html).join('')}</section>`,
-    )
-    .join('')
+          <div class="mark-slot" data-code="${escapeHtml(specimen.accessionNo)}"></div>
+        </article>`
+  })
+  const pageHtml = `<section class="sheet">${labelHtml.join('')}</section>`
   const html = `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -139,6 +128,18 @@ html, body { margin: 0; padding: 0; background: #fff; color: #111; font-family: 
   line-height: ${template.lineHeightMm}mm;
 }
 .label__main { min-width: 0; overflow: hidden; }
+.label__serial {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  padding: 0 1.2mm;
+  background: rgba(20, 20, 20, 0.62);
+  color: #fff;
+  font-family: Menlo, monospace;
+  font-size: 2.4mm;
+  line-height: 3.2mm;
+}
 .label__top { display: flex; justify-content: space-between; gap: .8mm; white-space: nowrap; }
 .label__top strong { overflow: hidden; text-overflow: ellipsis; }
 .label__top span { font-family: "Menlo", monospace; font-size: .78em; }

@@ -7,6 +7,8 @@ import BarcodeMark from './BarcodeMark.vue'
 const props = defineProps<{
   specimen: Specimen
   template: LabelTemplate
+  /** 开打时定下的标签序号；提供时在左上角显示序号徽章 */
+  serial?: number
 }>()
 
 const scale = computed(() => scientificFontScale(props.specimen.scientificName, props.template))
@@ -22,6 +24,7 @@ const style = computed(() => ({
 
 <template>
   <article class="label-item" :style="style">
+    <span v-if="typeof serial === 'number'" class="label-item__serial">№ {{ serial }}</span>
     <div class="label-item__main">
       <div class="label-item__top">
         <strong>{{ specimen.taxonName || '待鉴定类群' }}</strong>
@@ -78,4 +81,17 @@ const style = computed(() => ({
 .label-item__line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .label-item__mark { display: grid; min-width: 0; place-items: center; }
 .label-item__mark :deep(.barcode-mark) { display: block; width: 100%; height: 15mm; object-fit: contain; }
+.label-item__serial {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  padding: 0 1.2mm;
+  background: rgba(20, 20, 20, 0.62);
+  color: #fff;
+  font-family: Menlo, monospace;
+  font-size: 2.4mm;
+  line-height: 3.2mm;
+  letter-spacing: 0.2px;
+}
 </style>

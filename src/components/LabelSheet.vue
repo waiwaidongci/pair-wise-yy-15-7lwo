@@ -1,19 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { LabelTemplate, Specimen } from '../types/label'
+import type { BatchLabel, LabelTemplate, Specimen } from '../types/label'
 import { labelInnerWidth, labelsPerPage, rowsPerPage } from '../utils/layout'
 import LabelItem from './LabelItem.vue'
 
 const props = defineProps<{
-  specimens: Specimen[]
+  specimens?: Specimen[]
+  /** 打印批次的标签（含固定序号）；提供时优先于 specimens */
+  labels?: BatchLabel[]
   template: LabelTemplate
   pageIndex?: number
 }>()
 
-const pageItems = computed(() => {
+const pageItems = computed<BatchLabel[]>(() => {
+  if (props.labels) return props.labels
   const perPage = labelsPerPage(props.template)
   const page = props.pageIndex || 0
-  return props.specimens.slice(page * perPage, page * perPage + perPage)
+  return (props.specimens ?? []).slice(page * perPage, page * perPage + perPage).map((specimen) => ({
+    specimen,
+    serial: undefined,
+  }))
 })
 
 const sheetStyle = computed(() => ({
@@ -33,10 +39,11 @@ const sheetStyle = computed(() => ({
 <template>
   <section class="label-sheet" :style="sheetStyle">
     <LabelItem
-      v-for="specimen in pageItems"
-      :key="specimen.id"
-      :specimen="specimen"
+      v-for="item in pageItems"
+      :key="item.specimen.id"
+      :specimen="item.specimen"
       :template="template"
+      :serial="item.serial"
     />
     <div
       v-for="index in Math.max(0, labelsPerPage(template) - pageItems.length)"
