@@ -1,0 +1,11 @@
+{
+  "projectId": "pair-wise-yy-15",
+  "projectName": "标签工坊昆虫标本标签排版与打印工具",
+  "category": "排版与打印",
+  "businessDomain": "昆虫标本管理",
+  "projectForm": "完整项目",
+  "codeScope": "frontend",
+  "languages": "Vue 3, TypeScript, TDesign, Pinia, Vue Router, Vite",
+  "summary": "配置多栏标签模板和纸张物理尺寸，校验标本清单，自动排版长学名，生成条形码或二维码，完成毫米级预览、打印与成品导出。",
+  "containerized": false
+}
